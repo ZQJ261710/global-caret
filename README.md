@@ -1,36 +1,38 @@
 # Global Caret
 
-一个适用于 Windows 的文本输入光标叠加程序。视觉效果参考 [Woodfish Theme](https://github.com/woodfishhhh/Woodfish-Theme)：约 6px 的彩虹色光标、柔和光晕，以及移动时的短拖尾。程序独立运行，不修改其他应用的文件。
+适用于 Windows 的全局文本输入光标叠加程序。视觉效果参考 [Woodfish Theme](https://github.com/woodfishhhh/Woodfish-Theme)：彩虹色光标、柔和光晕，以及移动时的短拖尾。本项目独立运行，没有复制 Woodfish Theme 的代码。
 
 ## 下载和运行
 
-1. 在 [Releases](https://github.com/ZQJ261710/global-caret/releases) 下载 `GlobalCaret-v0.1.0-win-x64.zip` 并解压。
-2. 安装 [.NET 9 Desktop Runtime（Windows x64）](https://dotnet.microsoft.com/download/dotnet/9.0)，如果电脑上尚未安装。
-3. 双击解压后的 `GlobalCaret.exe`。请将同目录下的 `.dll` 和 `.json` 文件与它放在一起。
+1. 从 [Releases](https://github.com/ZQJ261710/global-caret/releases) 下载 `GlobalCaret-v0.2.0-win-x64.zip` 并解压。
+2. 双击 `GlobalCaret.exe`。发布包自带 .NET 10 运行时，无需另装 .NET Desktop Runtime。
 
-运行后，右键系统托盘图标可暂停或退出；双击图标可切换暂停状态。程序不会自动设为开机启动。
+右键系统托盘图标可暂停或退出；双击图标可切换暂停状态。程序不会自动开机启动，也不会读取、保存或上传输入内容。
 
-## 支持范围
+## 实现与适用范围
 
-程序优先通过 Windows UI Automation 的 `TextPattern` 获取当前输入位置，在传统编辑控件中回退到 Win32 原生光标。透明叠加层允许鼠标点击穿透，并跳过系统标记为密码框的输入区域。程序不读取、保存或上传输入内容。
-
-显示效果取决于目标应用是否向 Windows 公开光标位置。某些自绘编辑器、游戏、独占全屏程序、管理员权限窗口和安全桌面可能无法显示。不同缩放比例的多显示器组合尚未完整验证。
+- 优先使用 Windows UI Automation 的 `TextPattern2.GetCaretRange()` 获取当前插入点，再尝试 `TextPattern`。传统控件可回退到 Win32 原生光标。
+- 只有成功查询焦点控件并确认它不是密码框时才显示效果；查询失败时隐藏。原生 `Edit` 密码样式也会被排除。
+- 透明窗口只覆盖光标附近区域，随光标移动，并允许鼠标点击穿透。Windows 焦点和光标事件触发更新，低频轮询处理未发事件的编辑器。
+- 使用每显示器 DPI 感知和物理像素坐标定位。某些自绘编辑器、游戏、独占全屏程序、管理员权限窗口和安全桌面可能不公开光标位置。
 
 ## 从源码构建
 
-需要 Windows 和 .NET 9 SDK：
+需要 Windows 和 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)：
 
 ```powershell
 dotnet build .\GlobalCaret\GlobalCaret.csproj -c Release
 dotnet run --project .\GlobalCaret\GlobalCaret.csproj -c Release
 ```
 
-发布到目录：
+生成 Windows x64 独立单文件版本：
 
 ```powershell
-dotnet publish .\GlobalCaret\GlobalCaret.csproj -c Release -o .\GlobalCaret\publish
+dotnet publish .\GlobalCaret\GlobalCaret.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -o .\GlobalCaret\publish
 ```
 
-## 项目状态
+第三方组件 FlaUI 和 Interop.UIAutomationClient 的许可文件随发布包提供。
 
-当前版本是 Windows 原型，已通过 Release 构建及启动检查。跨应用的光标定位和视觉效果仍需在具体应用中验证。Woodfish Theme 是视觉参考；本项目未复制其代码。
+## 验证
+
+v0.2.0 已通过 Release 构建，以及普通 WinForms 输入框和密码框的焦点定位检查。不同缩放比例的多显示器组合、不同浏览器和第三方编辑器仍取决于应用自身的 UI Automation 实现；欢迎提交可复现的问题。
